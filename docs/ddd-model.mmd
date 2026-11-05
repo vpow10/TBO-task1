@@ -1,0 +1,124 @@
+classDiagram
+    direction LR
+
+    namespace Uwierzytelnienie {
+        class SesjaUzytkownika {
+            <<kontekst zewnętrzny>>
+            KlientId klientId
+        }
+    }
+
+    namespace ZarzadzanieKontem {
+        class Klient {
+            <<Aggregate Root>>
+            KlientId id
+            String imie
+            String nazwisko
+            Pesel pesel
+            Email email
+            Adres adres
+            zmienAdres(Adres)
+            zmienEmail(Email)
+        }
+        class Adres {
+            <<Value Object>>
+            String ulica
+            String numerDomu
+            String numerLokalu
+            String kodPocztowy
+            String miasto
+            String kraj = PL
+        }
+        class Pesel {
+            <<Value Object>>
+            String wartosc
+        }
+        class Email {
+            <<Value Object>>
+            String wartosc
+        }
+        class KontoBankowe {
+            <<Aggregate Root>>
+            KontoId id
+            NumerRachunku numer
+            KlientId wlascicielId
+            Kwota saldo
+            Kwota srodkiZablokowane
+            StatusKonta status
+            wplac(Kwota)
+            zablokujSrodki(PrzelewId, Kwota)
+            obciaz(PrzelewId)
+            zwolnijBlokade(PrzelewId)
+            zamknij()
+        }
+        class StatusKonta {
+            <<enumeration>>
+            AKTYWNE
+            ZABLOKOWANE
+            ZAMKNIETE
+        }
+    }
+
+    namespace Wspoldzielone {
+        class NumerRachunku {
+            <<Value Object>>
+            String iban
+        }
+        class Kwota {
+            <<Value Object>>
+            BigDecimal wartosc
+            String waluta = PLN
+            dodaj(Kwota) Kwota
+            odejmij(Kwota) Kwota
+        }
+    }
+
+    namespace Przelewy {
+        class Przelew {
+            <<Aggregate Root>>
+            PrzelewId id
+            KlientId zlecajacyId
+            NumerRachunku rachunekNadawcy
+            NumerRachunku rachunekOdbiorcy
+            String nazwaOdbiorcy
+            KwotaPrzelewu kwota
+            TytulPrzelewu tytul
+            StatusPrzelewu status
+            DateTime dataZlecenia
+            zlec()
+            potwierdzBlokade()
+            zrealizuj()
+            odrzuc(powod)
+        }
+        class KwotaPrzelewu {
+            <<Value Object>>
+            Kwota kwota
+        }
+        class TytulPrzelewu {
+            <<Value Object>>
+            String wartosc
+        }
+        class StatusPrzelewu {
+            <<enumeration>>
+            ZLECONY
+            SRODKI_ZABLOKOWANE
+            ZREALIZOWANY
+            ODRZUCONY
+        }
+    }
+
+    Klient *-- Adres
+    Klient *-- Pesel
+    Klient *-- Email
+    KontoBankowe *-- NumerRachunku
+    KontoBankowe *-- Kwota : saldo, srodkiZablokowane
+    KontoBankowe *-- StatusKonta
+    KontoBankowe ..> Klient : wlascicielId
+    Przelew *-- KwotaPrzelewu
+    Przelew *-- TytulPrzelewu
+    Przelew *-- StatusPrzelewu
+    Przelew *-- NumerRachunku : nadawca / odbiorca
+    KwotaPrzelewu *-- Kwota
+    SesjaUzytkownika ..> Klient : dostarcza KlientId
+    Przelew ..> KontoBankowe : zdarzenia PrzelewZlecony, PrzelewZrealizowany, PrzelewOdrzucony + zapytanie CzyWlascicielRachunku
+    KontoBankowe ..> Przelew : zdarzenia SrodkiZablokowane, BrakSrodkow
