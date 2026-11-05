@@ -62,6 +62,12 @@ def create_loan():
             print('Error. Book not available for loan.')
             return jsonify({'error': 'Book not available for loan.'}), 400
 
+        # Check if the customer exists
+        customer = Customer.query.filter_by(name=customer_name).first()
+        if not customer:
+            print('Error. Customer not found.')
+            return jsonify({'error': 'Customer not found.'}), 400
+
         try:
             # Create a new loan and store original book details
             new_loan = Loan(
@@ -73,7 +79,11 @@ def create_loan():
                 original_year_published=book.year_published,
                 original_book_type=book.book_type
             )
+        except ValueError as e:
+            print('Invalid loan data')
+            return jsonify({'error': f'Invalid loan data: {str(e)}'}), 400
 
+        try:
             # Add the new loan to the database
             db.session.add(new_loan)
             db.session.commit()

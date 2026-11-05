@@ -1,4 +1,11 @@
+from datetime import date
+
+from sqlalchemy.orm import validates
+
 from project import db , app
+from project.validation import validate_text, validate_int, validate_choice, current_year
+from project.books.models import BOOK_NAME_CHARS, AUTHOR_CHARS, BOOK_TYPES
+from project.customers.models import CUSTOMER_NAME_CHARS
 
 
 # Loan model
@@ -22,6 +29,32 @@ class Loan(db.Model):
         self.original_author = original_author
         self.original_year_published = original_year_published
         self.original_book_type = original_book_type
+
+    @validates('customer_name')
+    def validate_customer_name(self, key, value):
+        return validate_text('customer_name', value, CUSTOMER_NAME_CHARS)
+
+    @validates('book_name')
+    def validate_book_name(self, key, value):
+        return validate_text('book_name', value, BOOK_NAME_CHARS)
+
+    @validates('original_author')
+    def validate_original_author(self, key, value):
+        return validate_text('original_author', value, AUTHOR_CHARS)
+
+    @validates('original_year_published')
+    def validate_original_year_published(self, key, value):
+        return validate_int('original_year_published', value, 1, current_year())
+
+    @validates('original_book_type')
+    def validate_original_book_type(self, key, value):
+        return validate_choice('original_book_type', value, BOOK_TYPES)
+
+    @validates('loan_date', 'return_date')
+    def validate_dates(self, key, value):
+        if not isinstance(value, date):
+            raise ValueError(f'{key} must be a valid date')
+        return value
 
     def __repr__(self):
         return f"Customer: {self.customer_name}, Book: {self.book_name}, Loan Date: {self.loan_date}, Return Date: {self.return_date}"
